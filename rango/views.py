@@ -4,7 +4,13 @@ from django.shortcuts import render_to_response
 from rango.models import Page
 
 # Import the Category model
-from rango.models import Category
+from rango.models import Category, Page
+
+def encode_cat2url(category_name):
+    return category_name.replace(' ', '_')
+
+def decode_url2cat(url):
+    return url.replace('_',' ')
 
 def index(request):
     # Obtain the context from the HTTP request.
@@ -15,7 +21,15 @@ def index(request):
     # Retrieve the top 5 only - or all if less than 5.
     # Place the list in our context_dict dictionary which will be passed to the template engine.
     category_list = Category.objects.order_by('-likes')[:5]
-    context_dict = {'categories': category_list}
+    page_list = Page.objects.order_by('-views')[:5]
+    context_dict = {'categories': category_list,
+                    'pages': page_list}
+
+    # The following two lines are new.
+    # We loop through each category returned, and create a URL attribute.
+    # This attribute stores an encoded URL (e.g. spaces replaced with underscores).
+    for category in category_list:
+        category.url = encode_cat2url(category.name)
 
     # Render the response and send it back!
     return render_to_response('rango/index.html', context_dict, context)
@@ -32,7 +46,7 @@ def category(request, category_name_url):
     # Change underscores in the category name to spaces.
     # URLs don't handle spaces well, so we encode them as underscores.
     # We can then simply replace the underscores with spaces again to get the name.
-    category_name = category_name_url.replace('_', ' ')
+    category_name = decode_url2cat(category_name_url)
 
     # Create a context dictionary which we can pass to the template rendering engine.
     # We start by containing the name of the category passed by the user.
